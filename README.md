@@ -1,4 +1,4 @@
-AutoBrowser
+AutoBrowser Screenshot
 ===========
 
 autoBrowser screenshot is a tool written in python language that used for penetration testing.
@@ -10,9 +10,10 @@ and send a http/s request to each live host with his open port number using popu
 * Google Chrome
 * Safari
 
-and grab a screenshot of the returned page content.
-This tool is for IT people that did a network penetration test check and exported the result from nmap or any other network tool that checks for alive host in specific port number
-so they can automate their test which make our life easier (No Hard Work!).
+AutoBrowser grabs a screenshot of the response page content.
+This tool is designed for IT professionals to perform penetration testing and analyzing NMAP results.
+The tool can analyze text files as well as links to separate lines.
+This tool checks whether a specific port address is tested (tested in HTTP and in HTTPS) so they can make their test which make our lives easier (no hard work!).
 
 Requirements:
 ===============
