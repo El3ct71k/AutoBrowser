@@ -2,6 +2,7 @@ AutoBrowser
 ===========
 
 autoBrowser screenshot is a tool written in python language that used for penetration testing.
+
 The purpose of this tool is to parse nmap (Port scanner) results or just a simple text file that contain ip addresses and ports (for example 127.0.0.1:31337)
 and send a http/s request to each live host with his open port number using popular Web Browsers such as:
 
