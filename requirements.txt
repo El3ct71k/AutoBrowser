@@ -1,5 +1,3 @@
-docopt
+gevent
 requests
-lxml
-selenium
-futures
+Ghost.py

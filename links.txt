@@ -1,5 +1,0 @@
-http://google.com/
-https://facebook.com/
-http://1337.org.il/
-http://godaddy.com/
-https://gmail.com
