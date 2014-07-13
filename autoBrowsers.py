@@ -99,7 +99,7 @@ def analyze_nmap_file(xml_file):
     p.map(partial_callback_result, get_hosts_from_xml(results))
 
 
-def auto_browser(hosts, nmap_scan_args, import_from_file=None):
+def auto_browser(hosts=None, nmap_scan_args=None, import_from_file=None):
     freeze_support()
     if import_from_file:
         analyze_nmap_file(import_from_file)
@@ -113,4 +113,7 @@ def auto_browser(hosts, nmap_scan_args, import_from_file=None):
             nma.wait(2)
 
 if __name__ == '__main__':
-    auto_browser('188.226.241.183/32', '-sSV')
+    auto_browser(
+				    hosts='188.226.241.183/32',
+				    nmap_scan_args='-sSV'
+			    )
