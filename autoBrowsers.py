@@ -13,7 +13,7 @@ from os import path
 from ghost import Ghost
 from pprint import pprint
 from functools import partial
-from multiprocessing import freeze_support
+from multiprocessing import freeze_support, Pool
 
 
 TIMEOUT = 10
@@ -80,23 +80,34 @@ def callback_result(host, scan_result):
     print('URL List: ')
     print(url_list)
 
-if __name__ == '__main__':
-    freeze_support()
 
+def get_hosts_from_xml(results):
+    for host_ip in results['scan']:
+        yield host_ip
+
+
+def analyze_nmap_file(xml_file):
+    if not path.exists(xml_file):
+        print("nmap XML file not exists")
+        exit(-1)
     nma = nmap.PortScanner()
     # Add to arg parse
+    p = Pool(processes=10)
+    with open(xml_file) as nmap_results:
+        results = nma.analyse_nmap_xml_scan(nmap_results.read())
+        partial_callback_result = partial(callback_result, scan_result=results)
+    p.map(partial_callback_result, get_hosts_from_xml(results))
+
+def main():
+    freeze_support()
     import_from_file = 'test.xml'
     if import_from_file:
-        if not path.exists(import_from_file):
-            print("nmap XML file not exists")
-            exit(-1)
-        with open(import_from_file) as nmap_results:
-            results = nma.analyse_nmap_xml_scan(nmap_results.read())
-            for host_ip in results['scan']:
-                callback_result(host_ip, results)
-
+        analyze_nmap_file(import_from_file)
     else:
         nma = nmap.PortScannerAsync()
         nma.scan(hosts='192.168.1.0/31', arguments='-sSV', callback=callback_result)
         while nma.still_scanning():
             nma.wait(2)
+
+if __name__ == '__main__':
+    main()
