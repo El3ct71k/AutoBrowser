@@ -14,6 +14,7 @@ from ghost import Ghost
 from pprint import pprint
 from functools import partial
 from multiprocessing import freeze_support, Pool
+from argparse import ArgumentParser
 
 
 TIMEOUT = 10
@@ -99,21 +100,45 @@ def analyze_nmap_file(xml_file):
     p.map(partial_callback_result, get_hosts_from_xml(results))
 
 
-def auto_browser(hosts=None, nmap_scan_args=None, import_from_file=None):
+def auto_browser(hosts=None, nmap_args=None, nmap_report=None, verbose=False):
     freeze_support()
-    if import_from_file:
-        analyze_nmap_file(import_from_file)
+    if nmap_report:
+        analyze_nmap_file(nmap_report)
     else:
-        if not (hosts or nmap_scan_args):
+        if not (hosts or nmap_args):
             print("Please put host and arguments for Nmap")
             exit(-1)
         nma = nmap.PortScannerAsync()
-        nma.scan(hosts=hosts, arguments=nmap_scan_args, callback=callback_result)
+        nma.scan(hosts=hosts, arguments=nmap_args, callback=callback_result)
         while nma.still_scanning():
             nma.wait(2)
 
 if __name__ == '__main__':
-    auto_browser(
-				    hosts='188.226.241.183/32',
-				    nmap_scan_args='-sSV'
-			    )
+    parser = ArgumentParser(prog=path.basename(__file__))
+    scanner = parser.add_argument_group()
+    analyze_report = parser.add_argument_group()
+    analyze_report.add_argument(
+                    "-file", "--nmap_report",
+                    help="Analyze Nmap report(XML File)",
+                    default=None,
+    )
+
+    scanner.add_argument(
+                    "--hosts",
+                    help="Hosts for scan(Example: 127.0.0.1, 127.0.0.1/24)",
+                    default=None,
+
+    )
+
+    scanner.add_argument(
+                    "--nmap_args",
+                    help="Nmap args for scan",
+                    default=None
+    )
+    parser.add_argument(
+                    "-v", "--verbose",
+                    help="Verbosly",
+                    action='store_true'
+    )
+    args = vars(parser.parse_args())
+    auto_browser(**args)
