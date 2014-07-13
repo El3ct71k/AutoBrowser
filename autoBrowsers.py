@@ -98,16 +98,19 @@ def analyze_nmap_file(xml_file):
         partial_callback_result = partial(callback_result, scan_result=results)
     p.map(partial_callback_result, get_hosts_from_xml(results))
 
-def main():
+
+def auto_browser(hosts, nmap_scan_args, import_from_file=None):
     freeze_support()
-    import_from_file = 'test.xml'
     if import_from_file:
         analyze_nmap_file(import_from_file)
     else:
+        if not (hosts or nmap_scan_args):
+            print("Please put host and arguments for Nmap")
+            exit(-1)
         nma = nmap.PortScannerAsync()
-        nma.scan(hosts='192.168.1.0/31', arguments='-sSV', callback=callback_result)
+        nma.scan(hosts=hosts, arguments=nmap_scan_args, callback=callback_result)
         while nma.still_scanning():
             nma.wait(2)
 
 if __name__ == '__main__':
-    main()
+    auto_browser('188.226.241.183/32', '-sSV')
