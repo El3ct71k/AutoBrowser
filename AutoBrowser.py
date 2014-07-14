@@ -9,7 +9,6 @@ __email__ = ['El3ct71k@gmail.com', 'Realgam3@gmail.com']
 
 import grequests
 from os import path, makedirs
-from pprint import pprint
 from functools import partial
 from argparse import ArgumentParser
 from ghost.ghost import Ghost, QSize
@@ -29,14 +28,14 @@ def generate_async_requests(host, ports, url_list, project, timeout=10):
 
 
 def callback_exception(request, exception):
-    print("[%s] Request failed" % request.url)
+    print("[AutoBrowser] [%s] Request failed" % request.url)
 
 
 def callback_response(url_list, response, project, timeout=10, **kwargs):
     request = response.request
     capture_name = '%s.png' % request.url.replace('/', '').replace(':', '-')
 
-    print('[%s] Request Succeed' % request.url)
+    print("[AutoBrowser] [%s] Request Succeed" % request.url)
     url_list.append(request.url)
 
     # Create Ghost Object And Set Size
@@ -53,25 +52,33 @@ def callback_response(url_list, response, project, timeout=10, **kwargs):
     ghost.capture_to("{dir}/{name}".format(dir=project, name=capture_name))
 
 
+
 def callback_result(host, scan_result, project, timeout=10):
     url_list = []
 
-    print('------------------')
-    print('Host: %s' % host)
 
     ports = scan_result['scan'][host]['tcp']
-    print('Ports: ')
-    pprint(ports)
-
-    print('HTTP/S: ')
+    print("[AutoBrowser] Nmap results: \n"
+          "[AutoBrowser] Host: %s" % host)
+    for port in ports:
+        version = (ports[port]['version']) and ports[port]['version'] or 'unknown'
+        service = (ports[port]['product']) and ports[port]['product'] or 'unknown'
+        print("[AutoBrowser] Port: {port}\t"
+              "State: {state}\t"
+              "Service: {service}\t"
+              "Version: {version}"
+              .format(port=port, state=ports[port]['state'], service=service, version=version))
+    print("[AutoBrowser] Browser results:")
     grequests.map(
         requests=generate_async_requests(host, ports, url_list, project, timeout=timeout),
         size=10,
         exception_handler=callback_exception,
     )
-
-    print('URL List: ')
-    print(url_list)
+    with open('links.txt', 'w') as links_file:
+        for url in url_list:
+            links_file.write(url+"\n")
+    print("[AutoBrowser] The links that worked at the browser were saved in a `links.txt` file.\n"
+            "[AutoBrowser] Finished.")
 
 
 def analyze_and_browse(nmap_report, project='project', timeout=10):
@@ -98,7 +105,7 @@ def scan_and_browse(target, nmap_args='-sS -sV', project='project', timeout=10):
 
 if __name__ == '__main__':
     freeze_support()
-    parser = ArgumentParser(prog='Auto Browser')
+    parser = ArgumentParser(prog=path.basename(__file__))
     subparsers = parser.add_subparsers()
 
     # Report Parser
