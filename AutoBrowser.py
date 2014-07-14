@@ -1,11 +1,11 @@
 #!/usr/bin/env python
+from __future__ import print_function
 ########################################################
 __author__ = ['Nimrod Levy', 'Tomer Zait']
 __license__ = 'GPL v3'
 __version__ = '3.0-dev'
 __email__ = ['El3ct71k@gmail.com', 'Realgam3@gmail.com']
 ########################################################
-
 
 import grequests
 from os import path, makedirs
@@ -60,14 +60,13 @@ def callback_result(host, scan_result, project, timeout=10):
     ports = scan_result['scan'][host]['tcp']
     print("[AutoBrowser] Nmap results: \n"
           "[AutoBrowser] Host: %s" % host)
-    for port in ports:
-        version = (ports[port]['version']) and ports[port]['version'] or 'unknown'
-        service = (ports[port]['product']) and ports[port]['product'] or 'unknown'
-        print("[AutoBrowser] Port: {port}\t"
-              "State: {state}\t"
-              "Service: {service}\t"
-              "Version: {version}"
-              .format(port=port, state=ports[port]['state'], service=service, version=version))
+    for port, details in ports.items():
+        version = (details['version']) if details['version'] else 'unknown'
+        service = (details['product']) if details['product'] else 'unknown'
+        print("[AutoBrowser] Port: %s" % port, end='\t')
+        print("State: %s" % details['state'], end='\t')
+        print("Service: %s" % service, end='\t')
+        print("Version: %s" % version, end='\n')
     print("[AutoBrowser] Browser results:")
     grequests.map(
         requests=generate_async_requests(host, ports, url_list, project, timeout=timeout),
