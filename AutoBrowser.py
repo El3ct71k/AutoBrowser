@@ -8,6 +8,7 @@ __email__ = ['El3ct71k@gmail.com', 'Realgam3@gmail.com']
 
 
 import grequests
+from os import path, makedirs
 from pprint import pprint
 from functools import partial
 from argparse import ArgumentParser
@@ -16,14 +17,14 @@ from nmap import PortScannerAsync, PortScanner
 from multiprocessing import freeze_support, Pool
 
 
-def generate_async_requests(host, ports, url_list, timeout=10):
+def generate_async_requests(host, ports, url_list, project, timeout=10):
     for port in ports:
         for http_type in ('http', 'https'):
             yield grequests.get(
                 '%s://%s:%d/' % (http_type, host, port),
                 timeout=timeout,
                 verify=False,
-                callback=partial(callback_response, url_list, timeout=timeout),
+                callback=partial(callback_response, url_list, project=project, timeout=timeout),
             )
 
 
@@ -31,7 +32,7 @@ def callback_exception(request, exception):
     print("[%s] Request failed" % request.url)
 
 
-def callback_response(url_list, response, timeout=10, **kwargs):
+def callback_response(url_list, response, project, timeout=10, **kwargs):
     request = response.request
     capture_name = '%s.png' % request.url.replace('/', '').replace(':', '-')
 
@@ -49,10 +50,10 @@ def callback_response(url_list, response, timeout=10, **kwargs):
     # Open URL
     ghost.open(request.url)
     # Make Screen Capture
-    ghost.capture_to(capture_name)
+    ghost.capture_to("{dir}/{name}".format(dir=project, name=capture_name))
 
 
-def callback_result(host, scan_result, timeout=10):
+def callback_result(host, scan_result, project, timeout=10):
     url_list = []
 
     print('------------------')
@@ -64,7 +65,7 @@ def callback_result(host, scan_result, timeout=10):
 
     print('HTTP/S: ')
     grequests.map(
-        requests=generate_async_requests(host, ports, url_list, timeout=timeout),
+        requests=generate_async_requests(host, ports, url_list, project, timeout=timeout),
         size=10,
         exception_handler=callback_exception,
     )
@@ -73,23 +74,23 @@ def callback_result(host, scan_result, timeout=10):
     print(url_list)
 
 
-def analyze_and_browse(nmap_report, timeout=10):
+def analyze_and_browse(nmap_report, project='project', timeout=10):
     scanner = PortScanner()
     results = scanner.analyse_nmap_xml_scan(open(nmap_report).read())
 
     pool = Pool()
     pool.map(
-        partial(callback_result, scan_result=results, timeout=timeout),
+        partial(callback_result, scan_result=results, project=project, timeout=timeout),
         (host_ip for host_ip in results['scan'])
     )
 
 
-def scan_and_browse(target, nmap_args='-sS -sV', timeout=10):
+def scan_and_browse(target, nmap_args='-sS -sV', project='project', timeout=10):
         scanner = PortScannerAsync()
         scanner.scan(
             hosts=target,
             arguments=nmap_args,
-            callback=partial(callback_result, timeout=timeout)
+            callback=partial(callback_result, project=project, timeout=timeout)
         )
         while scanner.still_scanning():
             scanner.wait(2)
@@ -106,6 +107,12 @@ if __name__ == '__main__':
         "nmap_report",
         help="nmap report(xml file) to analyze",
         default=None,
+    )
+    parser_report.add_argument(
+        "-p", "--project",
+        help="Name of the project folder which contain all the data [ Default: project ]",
+        type=str,
+        default="project"
     )
     parser_report.add_argument(
         "-t", "--timeout",
@@ -127,6 +134,11 @@ if __name__ == '__main__':
         default="-sS -sV"
     )
     parser_scan.add_argument(
+        "-p", "--project",
+        help="Name of the project folder which contain all the data [ Default: project ]",
+        default="project"
+    )
+    parser_scan.add_argument(
         "-t", "--timeout",
         help="http request timeout period",
         type=int,
@@ -134,6 +146,8 @@ if __name__ == '__main__':
     )
 
     args = vars(parser.parse_args())
+    if not path.exists(args['project']):
+        makedirs(args['project'])
     if 'nmap_report' in args:
         analyze_and_browse(**args)
     else:
