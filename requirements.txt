@@ -1,3 +1,2 @@
-gevent
-requests
+python-nmap
 Ghost.py

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 ########################################################
 __author__ = ['Nimrod Levy', 'Tomer Zait']
 __license__ = 'GPL v3'
@@ -7,36 +6,18 @@ __version__ = '3.0-dev'
 __email__ = ['El3ct71k@gmail.com', 'Realgam3@gmail.com']
 ########################################################
 
-import grequests
-from os import path, makedirs
+from pprint import pprint
+from os import path, mkdir
 from functools import partial
+from collections import defaultdict
 from argparse import ArgumentParser
-from ghost.ghost import Ghost, QSize
-from nmap import PortScannerAsync, PortScanner
+from nmap import PortScannerYield, PortScanner
 from multiprocessing import freeze_support, Pool
+from ghost.ghost import Ghost, QSize, TimeoutError
 
 
-def generate_async_requests(host, ports, url_list, project, timeout=10):
-    for port in ports:
-        for http_type in ('http', 'https'):
-            yield grequests.get(
-                '%s://%s:%d/' % (http_type, host, port),
-                timeout=timeout,
-                verify=False,
-                callback=partial(callback_response, url_list, project=project, timeout=timeout),
-            )
-
-
-def callback_exception(request, exception):
-    print("[AutoBrowser] [%s] Request failed" % request.url)
-
-
-def callback_response(url_list, response, project, timeout=10, **kwargs):
-    request = response.request
-    capture_name = '%s.png' % request.url.replace('/', '').replace(':', '-')
-
-    print("[AutoBrowser] [%s] Request Succeed" % request.url)
-    url_list.append(request.url)
+def capture_url(port_tuple, project='project', timeout=10):
+    host, port, port_details = port_tuple
 
     # Create Ghost Object And Set Size
     ghost = Ghost(
@@ -46,66 +27,107 @@ def callback_response(url_list, response, project, timeout=10, **kwargs):
     )
     ghost.webview.resize(QSize(1280, 720))
     ghost.page.setViewportSize(QSize(1280, 720))
-    # Open URL
-    ghost.open(request.url)
-    # Make Screen Capture
-    ghost.capture_to("{dir}/{name}".format(dir=project, name=capture_name))
+
+    # Try To Open URL
+    page = None
+    for http_type in ('http', 'https'):
+        request_url = '%s://%s:%d/' % (http_type, host, port)
+        try:
+            page = ghost.open(request_url)[0]
+        except TimeoutError:
+            pass
+
+        if page:
+            # Make Screen Capture
+            capture_name = '%s-%s-%d.png' % (http_type, host, port)
+            ghost.capture_to(path.join(project, capture_name))
+            return host, port, port_details, request_url
+    return host, port, port_details, None
 
 
+def create_report(ports_generator, project='project', timeout=10, pool_size=None):
+    if not path.exists(project):
+        mkdir(project)
 
-def callback_result(host, scan_result, project, timeout=10):
-    url_list = []
-
-
-    ports = scan_result['scan'][host]['tcp']
-    print("[AutoBrowser] Nmap results: \n"
-          "[AutoBrowser] Host: %s" % host)
-    for port, details in ports.items():
-        version = (details['version']) if details['version'] else 'unknown'
-        service = (details['product']) if details['product'] else 'unknown'
-        print("[AutoBrowser] Port: %s" % port, end='\t')
-        print("State: %s" % details['state'], end='\t')
-        print("Service: %s" % service, end='\t')
-        print("Version: %s" % version, end='\n')
-    print("[AutoBrowser] Browser results:")
-    grequests.map(
-        requests=generate_async_requests(host, ports, url_list, project, timeout=timeout),
-        size=10,
-        exception_handler=callback_exception,
+    pool_map = Pool(pool_size).imap(
+        func=partial(capture_url, project=project, timeout=timeout),
+        iterable=ports_generator,
     )
-    with open('links.txt', 'w') as links_file:
-        for url in url_list:
-            links_file.write(url+"\n")
-    print("[AutoBrowser] The links that worked at the browser were saved in a `links.txt` file.\n"
-            "[AutoBrowser] Finished.")
+
+    report = defaultdict(dict)
+    for host, port, port_details, request_url in pool_map:
+        report[host][port] = {
+            'port_details': port_details,
+            'request_url': request_url,
+        }
+    pprint(dict(report))
 
 
-def analyze_and_browse(nmap_report, project='project', timeout=10):
+def get_ports_decorator(get_ports_function):
+    def get_ports_decorated(*args, **kwargs):
+        for host, scan_result in get_ports_function(*args, **kwargs):
+            if host not in scan_result['scan']:
+                continue
+
+            for port, port_details in scan_result['scan'][host]['tcp'].items():
+                yield host, port, port_details
+    return get_ports_decorated
+
+
+@get_ports_decorator
+def get_ports_from_report(nmap_report):
     scanner = PortScanner()
-    results = scanner.analyse_nmap_xml_scan(open(nmap_report).read())
+    scan_result = scanner.analyse_nmap_xml_scan(open(nmap_report).read())
+    for host in scan_result['scan']:
+        yield host, scan_result
 
-    pool = Pool()
-    pool.map(
-        partial(callback_result, scan_result=results, project=project, timeout=timeout),
-        (host_ip for host_ip in results['scan'])
+
+def analyze_and_browse(nmap_report=None, project='project', timeout=10, pool_size=None):
+    return create_report(
+        ports_generator=get_ports_from_report(nmap_report),
+        project=project,
+        timeout=timeout,
+        pool_size=pool_size
     )
 
 
-def scan_and_browse(target, nmap_args='-sS -sV', project='project', timeout=10):
-        scanner = PortScannerAsync()
-        scanner.scan(
-            hosts=target,
-            arguments=nmap_args,
-            callback=partial(callback_result, project=project, timeout=timeout)
+@get_ports_decorator
+def get_ports_from_scan(target, nmap_args='-sS -sV'):
+    scanner = PortScannerYield()
+    for host, scan_result in scanner.scan(hosts=target, arguments=nmap_args):
+        yield host, scan_result
+
+
+def scan_and_browse(target=None, nmap_args='-sS -sV', project='project', timeout=10, pool_size=None):
+    print project
+    return create_report(
+        ports_generator=get_ports_from_scan(target, nmap_args),
+        project=project,
+        timeout=timeout,
+        pool_size=pool_size
+    )
+
+
+def add_global_arguments(*parsers):
+    for parser in parsers:
+        parser.add_argument(
+            "-p", "--project",
+            help="project name (folder which contain all the data) [default: project]",
+            type=str,
+            default="project"
         )
-        while scanner.still_scanning():
-            scanner.wait(2)
+        parser.add_argument(
+            "-t", "--timeout",
+            help="http request timeout period",
+            type=int,
+            default=10,
+        )
 
 
 if __name__ == '__main__':
     freeze_support()
-    parser = ArgumentParser(prog=path.basename(__file__))
-    subparsers = parser.add_subparsers()
+    parser_main = ArgumentParser(prog=path.basename(__file__))
+    subparsers = parser_main.add_subparsers()
 
     # Report Parser
     parser_report = subparsers.add_parser('analyze', help='Analyze and browse')
@@ -113,18 +135,6 @@ if __name__ == '__main__':
         "nmap_report",
         help="nmap report(xml file) to analyze",
         default=None,
-    )
-    parser_report.add_argument(
-        "-p", "--project",
-        help="Name of the project folder which contain all the data [ Default: project ]",
-        type=str,
-        default="project"
-    )
-    parser_report.add_argument(
-        "-t", "--timeout",
-        help="http request timeout period",
-        type=int,
-        default=10,
     )
 
     # Scan Parser
@@ -139,22 +149,11 @@ if __name__ == '__main__':
         help="nmap args for scan",
         default="-sS -sV"
     )
-    parser_scan.add_argument(
-        "-p", "--project",
-        help="Name of the project folder which contain all the data [ Default: project ]",
-        default="project"
-    )
-    parser_scan.add_argument(
-        "-t", "--timeout",
-        help="http request timeout period",
-        type=int,
-        default=10,
-    )
 
-    args = vars(parser.parse_args())
-    if not path.exists(args['project']):
-        makedirs(args['project'])
-    if 'nmap_report' in args:
-        analyze_and_browse(**args)
-    else:
-        scan_and_browse(**args)
+    # Add Global Arguments to parsers
+    add_global_arguments(parser_scan, parser_report)
+
+    sys_args = vars(parser_main.parse_args())
+    if 'nmap_report' in sys_args:
+        exit(analyze_and_browse(**sys_args))
+    exit(scan_and_browse(**sys_args))
