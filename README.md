@@ -17,7 +17,7 @@ Examples:
 * Get the argument details of `analyze` method:
 `python AutoBrowser.py analyze --help`
 * Analyzing Nmap XML report and create folder by name report_analyze:
-`python AutoBrowser.py analyze nmap_file.xml` --project report_analyze
+`python AutoBrowser.py analyze nmap_file.xml --project report_analyze`
 
 Requirements:
 ===============
