@@ -1,5 +1,2 @@
-docopt
-requests
-lxml
-selenium
-futures
+python-nmap
+Ghost.py
