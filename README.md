@@ -1,42 +1,41 @@
-AutoBrowser Screenshot
+AutoBrowser 3.0
 ===========
+AutoBrowser is a tool written in python for penetration testers.
+The purpose of this tool is to create report and screenshots of http/s based ports on the network.
+It analyze Nmap Report or scan with Nmap,
+Check the results with http/s request on each host using headless web browser,
+Grab a screenshot of the response page content.
+* This tool is designed for IT professionals to perform penetration testing to scan and analyze NMAP results.
+[Proof of concept video (From version: 2.0)](https://www.youtube.com/watch?v=iiexvh3KLvE&feature=youtu.be)
 
-AutoBrowser screenshot is a tool written in python language that used for penetration testing.
-The purpose of this tool is to parse nmap (Port scanner) results or just a simple text file that contain ip addresses and ports (for example http://127.0.0.1:31337)
-and send a http/s request to each live host with his open port number using popular Web Browsers such as:
+Examples:
+===============
+* Get the argument details of `scan` method:
+`python AutoBrowser.py scan --help`
+* Scan with Nmap and Checks the results:
+`python AutoBrowser.py scan '192.168.1.1/24' -a='-sT -sV -T3'`
+* Get the argument details of `analyze` method:
+`python AutoBrowser.py analyze --help`
+* Analyzing Nmap XML report:
+`python AutoBrowser.py analyze nmap_file.xml`
 
-* Internet Explorer
-* Mozilla Firefox
-* Google Chrome
-* Safari
-
-AutoBrowser grabs a screenshot of the response page content.
-This tool is designed for IT professionals to perform penetration testing and analyzing NMAP results.
-The tool can analyze text files as well as links to separate lines.
-This tool checks whether a specific port address is tested (tested in HTTP and in HTTPS) so they can make their test which make our lives easier (no hard work!).
-
-[Proof of concept video](https://www.youtube.com/watch?v=iiexvh3KLvE&feature=youtu.be)
 Requirements:
 ===============
 ###Linux Installation:
-1. sudo apt-get install python-dev python-pip
+1. sudo apt-get install python-pip python2.7-dev libxext-dev python-qt4 qt4-dev-tools build-essential nmap
 2. sudo pip install -r requirements.txt
 
 ###MacOSx Installation:
 1. Install Xcode Command Line Tools (AppStore)
-2. sudo easy_install pip
-3. sudo pip install -r requirements.txt
+2. `ruby -e "$(curl -fsSL https://raw.github.com/mxcl/homebrew/go)"`
+3. brew install pyqt nmap
+4. sudo easy_install pip
+5. sudo pip install -r requirements.txt
 
 ###Windows Installation:
-1. Install [docopt](https://github.com/docopt/docopt)
-2. Install [requests](http://www.lfd.uci.edu/~gohlke/pythonlibs/#requests)
-3. Install [lxml](http://www.lfd.uci.edu/~gohlke/pythonlibs/#lxml)
-4. Install [selenium](https://pypi.python.org/pypi/selenium)
-5. Install [futures](https://pypi.python.org/pypi/futures)
-6. Open Command Prompt(cmd) as Administrator -> Goto python folder -> Scripts (cd c:\Python27\Scripts)
-7. pip install -r (Full Path To requirements.txt)
-
-Credits
-========
-* Avi Orenstein
-* Tomer Zait
+1. Install [setuptools](http://www.lfd.uci.edu/~gohlke/pythonlibs/#setuptools)
+2. Install [pip](http://www.lfd.uci.edu/~gohlke/pythonlibs/#pip)
+3. Install [PyQt4](http://www.lfd.uci.edu/~gohlke/pythonlibs/#pyqt)
+4. install [Nmap](http://nmap.org/download.html)
+4. Open Command Prompt(cmd) as Administrator -> Goto python folder -> Scripts (cd c:\Python27\Scripts)
+5. pip install -r (Full Path To requirements.txt)
