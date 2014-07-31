@@ -45,10 +45,13 @@ def configure_logger():
 
 def capture_url(port_tuple, project='project', timeout=10):
     """
-        This function is responsible to create a screen capture from ip and port.
-        The procedure of this function creates a URL which consists from ip:port,
-        If the url is valid, it opens headless browser and capture the page.
-        Finally, it returns tuple with the current details (host, port, details, url).
+    This function is responsible to create a screen capture from ip and port.
+    The procedure of this function creates a URL which consists from ip:port,
+    If the url is valid, it opens headless browser and capture the page.
+    Finally, it returns tuple with the current details (host, port, details, url).
+    :param port_tuple: Tuple of ports.
+    :param project: Project name. Default is 'project'
+    :param timeout:How long to wait on page load. Default is 10 secs.
     """
     # Extract The Port Tuple
     host, port, details = port_tuple
@@ -90,9 +93,9 @@ def capture_url(port_tuple, project='project', timeout=10):
 
 def browse_async(ports_generator, project='project', timeout=10, pool_size=None):
     """
-        This function is responsible to create a async processes with the relevant Nmap report details.
-        it calls to capture_url function and creates a dict variable with the details.
-        Finally it create a Json file with all the relevant details(host, port, state, product and url).
+    This function is responsible to create a async processes with the relevant Nmap report details.
+    it calls to capture_url function and creates a dict variable with the details.
+    Finally it create a Json file with all the relevant details(host, port, state, product and url).
     """
     # Report Variable
     report = defaultdict(dict)
@@ -216,6 +219,7 @@ def add_global_arguments(*parsers):
 
 
 if __name__ == '__main__':
+    # Initialzing base handlers
     freeze_support()
     parser_main = ArgumentParser(prog=path.basename(__file__))
     subparsers = parser_main.add_subparsers()
