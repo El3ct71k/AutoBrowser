@@ -9,6 +9,7 @@ __email__ = ['El3ct71k@gmail.com', 'Realgam3@gmail.com']
 import sys
 import json
 import logging
+import exceptions
 from os import path, mkdir
 from functools import partial
 from collections import defaultdict
@@ -143,8 +144,11 @@ def get_ports_from_report(nmap_report):
     try:
         scan_result = scanner.analyse_nmap_xml_scan(open(nmap_report).read())
         for host in scan_result['scan']:
-            for port, port_details in scan_result['scan'][host]['tcp'].items():
-                yield host, port, port_details
+            try:
+                for port, port_details in scan_result['scan'][host]['tcp'].items():
+                    yield host, port, port_details
+            except exceptions.KeyError:
+                pass
     except Exception, error:
         LOGGER.error("Error: %s" % error)
         exit(1)
