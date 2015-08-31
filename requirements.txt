@@ -1,2 +1,2 @@
 python-nmap
-Ghost.py
+Ghost.py==0.1b3
