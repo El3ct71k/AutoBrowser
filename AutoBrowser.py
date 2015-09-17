@@ -44,7 +44,8 @@ def configure_logger():
     LOGGER.addHandler(ch)
 
 
-def capture_url(port_tuple, check_certificates, java_enabled, useragent, proxy=None, proxy_auth=None, project='project', timeout=10):
+def capture_url(port_tuple, useragent, proxy=None, proxy_auth=None, check_certificates=False,
+                java_enabled=False, project='project', timeout=10):
     """
     This function is responsible to create a screen capture from ip and port.
     The procedure of this function creates a URL which consists from ip:port,
