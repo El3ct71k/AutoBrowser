@@ -10,6 +10,7 @@ Grab a screenshot of the response page content.
 
 Examples:
 ===============
+<<<<<<< HEAD
 * Get the argument details of `scan` method:
 `python AutoBrowser.py scan --help`
 * Scan with Nmap and Checks the results:
@@ -18,6 +19,17 @@ Examples:
 `python AutoBrowser.py analyze --help`
 * Analyzing Nmap XML report:
 `python AutoBrowser.py analyze nmap_file.xml`
+=======
+**Delimiting the values on the CLI arguments it must be by double quotes only!**
+* Get the argument details of `scan` method:
+`python AutoBrowser.py scan --help`
+* Scan with Nmap and Checks the results and create folder by name project_name:
+`python AutoBrowser.py scan "192.168.1.1/24" -a="-sT -sV -T3" -p project_name`
+* Get the argument details of `analyze` method:
+`python AutoBrowser.py analyze --help`
+* Analyzing Nmap XML report and create folder by name report_analyze:
+`python AutoBrowser.py analyze nmap_file.xml --project report_analyze`
+>>>>>>> master
 
 Requirements:
 ===============

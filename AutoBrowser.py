@@ -9,6 +9,7 @@ __email__ = ['El3ct71k@gmail.com', 'Realgam3@gmail.com']
 import sys
 import json
 import logging
+import exceptions
 from os import path, mkdir
 from functools import partial
 from collections import defaultdict
@@ -45,10 +46,13 @@ def configure_logger():
 
 def capture_url(port_tuple, project='project', timeout=10):
     """
-        This function is responsible to create a screen capture from ip and port.
-        The procedure of this function creates a URL which consists from ip:port,
-        If the url is valid, it opens headless browser and capture the page.
-        Finally, it returns tuple with the current details (host, port, details, url).
+    This function is responsible to create a screen capture from ip and port.
+    The procedure of this function creates a URL which consists from ip:port,
+    If the url is valid, it opens headless browser and capture the page.
+    Finally, it returns tuple with the current details (host, port, details, url).
+    :param port_tuple: Tuple of ports.
+    :param project: Project name. Default is 'project'
+    :param timeout:How long to wait on page load. Default is 10 secs.
     """
     # Extract The Port Tuple
     host, port, details = port_tuple
@@ -63,36 +67,32 @@ def capture_url(port_tuple, project='project', timeout=10):
     }
 
     # Create Ghost Object And Set Size
-    ghost = Ghost(
-        wait_timeout=timeout,
-        download_images=True,
-        cache_dir=None,
-    )
-    ghost.webview.resize(QSize(1280, 720))
-    ghost.page.setViewportSize(QSize(1280, 720))
+    ghost = Ghost()
+    session = ghost.start(wait_timeout=timeout)
+    session.page.setViewportSize(QSize(1280, 720))
 
     # Try To Open URL
     page = None
     for http_type in ('http', 'https'):
         request_url = '%s://%s:%d/' % (http_type, host, port)
         try:
-            page = ghost.open(request_url)[0]
+            page = session.open(request_url)[0]
         except TimeoutError:
             pass
 
         if page:
             # Make a Screen Capture
             capture_name = '%s-%s-%d.png' % (http_type, host, port)
-            ghost.capture_to(path.join(project, capture_name))
+            session.capture_to(path.join(project, capture_name))
             return host, port, port_details, request_url
     return host, port, port_details, 'Not HTTP/S Service'
 
 
 def browse_async(ports_generator, project='project', timeout=10, pool_size=None):
     """
-        This function is responsible to create a async processes with the relevant Nmap report details.
-        it calls to capture_url function and creates a dict variable with the details.
-        Finally it create a Json file with all the relevant details(host, port, state, product and url).
+    This function is responsible to create a async processes with the relevant Nmap report details.
+    it calls to capture_url function and creates a dict variable with the details.
+    Finally it create a Json file with all the relevant details(host, port, state, product and url).
     """
     # Report Variable
     report = defaultdict(dict)
@@ -140,8 +140,11 @@ def get_ports_from_report(nmap_report):
     try:
         scan_result = scanner.analyse_nmap_xml_scan(open(nmap_report).read())
         for host in scan_result['scan']:
-            for port, port_details in scan_result['scan'][host]['tcp'].items():
-                yield host, port, port_details
+            try:
+                for port, port_details in scan_result['scan'][host]['tcp'].items():
+                    yield host, port, port_details
+            except exceptions.KeyError:
+                pass
     except Exception, error:
         LOGGER.error("Error: %s" % error)
         exit(1)
@@ -216,6 +219,7 @@ def add_global_arguments(*parsers):
 
 
 if __name__ == '__main__':
+    # Initialzing base handlers
     freeze_support()
     parser_main = ArgumentParser(prog=path.basename(__file__))
     subparsers = parser_main.add_subparsers()
