@@ -19,7 +19,7 @@ from collections import defaultdict
 from colorlog import ColoredFormatter
 from nmap import PortScannerYield, PortScanner
 from multiprocessing import Process, JoinableQueue
-from ghost.ghost import Ghost, QSize, TimeoutError
+from ghost.ghost import Ghost, QSize, TimeoutError, HttpResource
 
 # Global Variable
 LOGGER = None
@@ -101,7 +101,7 @@ def browser_process(queue, report_queue, useragent, proxy=None, proxy_auth=None,
 
         # Create Ghost Object And Set Size
         ghost = Ghost()
-        session = ghost.start(wait_timeout=timeout, user_agent=useragent, java_enabled=java_enabled,
+        session = ghost.start(wait_timeout=int(timeout), user_agent=useragent, java_enabled=java_enabled,
                               ignore_ssl_errors=True)
         session = configure_proxy(session, proxy, proxy_auth)
 
@@ -114,7 +114,6 @@ def browser_process(queue, report_queue, useragent, proxy=None, proxy_auth=None,
 
             # Crate New Port Details Dictionary
             port_details = {
-                'protocol_type': defaultdict(dict),
                 'state': details['state'].upper(),
                 'service': details['name'].upper(),
                 'product': "{product_name} {product_version}".format(
@@ -122,22 +121,21 @@ def browser_process(queue, report_queue, useragent, proxy=None, proxy_auth=None,
                     product_version=details['version'],
                 ).strip()
             }
-
+            is_webapp = False
             # Try To Open URL
-            for protocol_type in ('https', 'http'):
+            for protocol_type in ['http', 'https']:
                 request_url = '%s://%s:%d/' % (protocol_type, host, port)
                 capture_name = '%s-%s-%d.png' % (protocol_type, host, port)
                 capture_name = path.join(project, capture_name)
-                port_details['protocol_type'][protocol_type] = defaultdict(dict)
                 try:
                     page = session.open(request_url)[0]
-                    if page:
+                    if isinstance(page, HttpResource):
                         # Make a Screen Capture
                         page_content = str(page.content)
                         session.capture_to(capture_name)
                         title = re.findall(r"<title>(.*)</title>", page_content, re.DOTALL)[0]
-                        port_details['protocol_type'][protocol_type]['url'] = request_url
-                        port_details['protocol_type'][protocol_type]['page_title'] = title
+                        port_details['url'] = request_url
+                        port_details['page_title'] = title
                         page_title = title.replace('\n', '').replace('\r', '') if title != '' else "No title"
                         LOGGER.info("[{url}] {product}({name}) - {title}".format(
                             product=port_details['product'],
@@ -145,29 +143,34 @@ def browser_process(queue, report_queue, useragent, proxy=None, proxy_auth=None,
                             url=request_url,
                             title=page_title
                         ))
+                        is_webapp = True
+                        break
 
-                    else:
-                        port_details['protocol_type'][protocol_type]['url'] = "Not %s Service" % protocol_type.upper()
-                        if verbose:
-                            LOGGER.debug("Host: {host}:{port} is not {protocol_type} Service".format(
-                                host=host,
-                                port=port,
-                                protocol_type=protocol_type.upper()
-                            ))
-                    report_queue.put((host, port, port_details))
+
                 except TimeoutError:
-                    pass
+                    continue
                 except IndexError:
-                    pass
+                    continue
                 except Exception as e:
                     LOGGER.error("Error: %s" % str(e))
+                    continue
 
+            if not is_webapp:
+                port_details['url'] = "Not HTTP/S Service"
+                if verbose:
+                    LOGGER.debug("Host: {host}:{port} is not HTTP/S Service".format(
+                        host=host,
+                        port=port,
+                    ))
+
+            report_queue.put((host, port, port_details))
             queue.task_done()
         ghost.exit()
     except KeyboardInterrupt:
         raise KeyboardInterruptError()
     except Exception as e:
         LOGGER.error("Error: %s" % str(e))
+
 
 def generate_report(project, report_queue):
     """
@@ -207,7 +210,6 @@ def browse_async(ports_generator, java_enabled, useragent, max_workers=4, proxy=
         :param verbose:
         :return:
     """
-    LOGGER.info("Analyzing results..")
     # Create Project Folder If Not Exist
     if not path.exists(project):
         mkdir(project)
@@ -223,6 +225,7 @@ def browse_async(ports_generator, java_enabled, useragent, max_workers=4, proxy=
         if number_services == 0:
             LOGGER.error("Empty results")
             exit()
+        LOGGER.info("Analyzing results..")
         workers_num = number_services if number_services <= max_workers else max_workers
         LOGGER.warning("Total workers: %d" % workers_num)
         for w in range(workers_num):
@@ -488,7 +491,7 @@ def main(sys_args):
         analyze_and_browse(**sys_args)
     else:
         scan_and_browse(**sys_args)
-    LOGGER.info("Scanned %s seconds." % (time.time() - ft))
+    LOGGER.info("Running time: %s seconds.\n" % (time.time() - ft))
 
 
 if __name__ == '__main__':
