@@ -12,10 +12,8 @@ Grab a screenshot of the response page content.
 Documentation:
 ==============
 *positional arguments:
-
-****analyze** - _Analyze and browse (Require argument: nmap report location)_
-
-****scan** - _Scan and browse (Require argument: target host or file)_
+** **analyze** - _Analyze and browse (Require argument: nmap report location)_
+** **scan** - _Scan and browse (Require argument: target host or file)_
 
 
 *optional arguments:
