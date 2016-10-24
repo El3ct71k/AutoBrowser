@@ -6,6 +6,7 @@ you can choose between analyze Nmap report(XML file `-oX`) or scan with Nmap,
 then the tool automaticly Check the results with http/s request on each host using headless web browser,
 then it would take a screenshot of the response page content.
 * This tool is designed for IT professionals to perform penetration testing.
+
 [Proof of concept video from AutoBrowser 4.0](https://youtu.be/wYLr9QavBKQ)
 
 
