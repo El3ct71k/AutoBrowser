@@ -12,7 +12,6 @@ import sys
 import json
 import time
 import logging
-import exceptions
 from os import path, mkdir
 from argparse import ArgumentParser
 from collections import defaultdict
@@ -260,11 +259,14 @@ def get_ports_from_report(nmap_report):
         for host in scan_result['scan']:
             try:
                 for port, port_details in scan_result['scan'][host]['tcp'].items():
-                    yield host, port, port_details
-            except exceptions.KeyError:
+                    try:
+                        yield host, port, port_details
+                    except IndexError:
+                        pass
+            except KeyError:
                 pass
-    except Exception, error:
-        LOGGER.error("Error: %s" % error)
+    except Exception as e:
+        LOGGER.error("Error: %s" % e)
         raise StopIteration
 
 
@@ -305,12 +307,18 @@ def get_ports_from_scan(target, nmap_args):
     try:
         # Create the scan and divide the results to variables.
         for host, scan_result in scanner.scan(hosts=target, arguments=nmap_args):
-            if host not in scan_result['scan']:
-                continue
-            for port, port_details in scan_result['scan'][host]['tcp'].items():
-                yield host, port, port_details
-    except Exception, error:
-        LOGGER.error("Error: %s" % error)
+            try:
+                if host not in scan_result['scan']:
+                    continue
+                for port, port_details in scan_result['scan'][host]['tcp'].items():
+                    try:
+                        yield host, port, port_details
+                    except IndexError:
+                        pass
+            except KeyError:
+                pass
+    except Exception as e:
+        LOGGER.error("Error: %s" % e)
         exit(1)
 
 
