@@ -132,10 +132,10 @@ def browser_process(queue, report_queue, useragent, proxy=None, proxy_auth=None,
                         # Make a Screen Capture
                         page_content = str(page.content)
                         session.capture_to(capture_name)
-                        title = re.findall(r"<title>(.*)</title>", page_content, re.DOTALL)[0]
+                        title = str(re.findall(r"<title>(.*)</title>", page_content, re.DOTALL)[0])
                         port_details['url'] = request_url
-                        port_details['page_title'] = title
-                        page_title = title.replace('\n', '').replace('\r', '') if title != '' else "No title"
+                        port_details['page_title'] = title.replace("\r", '').replace("\n", '')
+                        page_title = title if title != '' else "No title"
                         LOGGER.info("[{url}] {product}({name}) - {title}".format(
                             product=port_details['product'],
                             name=port_details['service'],
@@ -144,7 +144,6 @@ def browser_process(queue, report_queue, useragent, proxy=None, proxy_auth=None,
                         ))
                         is_webapp = True
                         break
-
 
                 except TimeoutError:
                     continue
@@ -258,6 +257,7 @@ def get_ports_from_report(nmap_report):
         scan_result = scanner.analyse_nmap_xml_scan(open(nmap_report.strip('"')).read())
         for host in scan_result['scan']:
             try:
+                LOGGER.info("%s - Total ports to browse: %d" % (host, len(scan_result['scan'][host]['tcp'])))
                 for port, port_details in scan_result['scan'][host]['tcp'].items():
                     try:
                         yield host, port, port_details
@@ -310,6 +310,7 @@ def get_ports_from_scan(target, nmap_args):
             try:
                 if host not in scan_result['scan']:
                     continue
+                LOGGER.info("%s - Total ports to browse: %d" % (host, len(scan_result['scan'][host]['tcp'])))
                 for port, port_details in scan_result['scan'][host]['tcp'].items():
                     try:
                         yield host, port, port_details
@@ -457,6 +458,10 @@ def check_settings(sys_args):
     java_flag = "Yes" if sys_args['java_enabled'] else "No"
     verbose = "Yes" if sys_args['verbose'] else "No"
     if sys_args['proxy']:
+
+        if "nmap_args" in sys_args and "target" in sys_args:
+            if "--proxies" not in sys_args['nmap_args']:
+                LOGGER.error("To scan the network with Nmap, please use --proxies flag trough Nmap arguments.")
         proxy_regex = re.search(r"(?P<type>socks5|http)://(?P<host>\d+(?:\.\d+){3}):(?P<port>\d+)", sys_args['proxy'])
         if proxy_regex:
             LOGGER.critical(
