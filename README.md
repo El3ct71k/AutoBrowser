@@ -12,21 +12,21 @@ then it would take a screenshot of the response page content.
 
 Documentation:
 ==============
-*positional arguments:
-** **analyze** - _Analyze and browse (Require argument: nmap report location)_
-** **scan** - _Scan and browse (Require argument: target host or file)_
+* positional arguments:
+* **analyze** - _Analyze and browse (Require argument: nmap report location)_
+* **scan** - _Scan and browse (Require argument: target host or file)_
 
 
-*optional arguments:
-****-h, --help** - _show this help message and exit_
-****-p PROJECT, --project PROJECT** - _project name (folder which contain all the data. default: project)_
-****-t TIMEOUT, --timeout TIMEOUT** - _http request timeout period_
-****-w MAX_WORKERS, --max-workers MAX_WORKERS** - _Max worker processes (Default: 4)_
-****--useragent USERAGENT** - _Set specific user agent_
-****--java-enabled** - _Display Java enviroment_
-****--verbose** - _Show all checks verbosly_
-****--proxy PROXY** - _Relay connections through HTTP/socks5 proxy (Example: socks5://127.0.0.1:8080)_
-****--proxy-auth PROXY_AUTH** - _Set proxy credentials. (Example: username:password)_
+* optional arguments:
+* **-h, --help** - _show this help message and exit_
+* **-p PROJECT, --project PROJECT** - _project name (folder which contain all the data. default: project)_
+* **-t TIMEOUT, --timeout TIMEOUT** - _http request timeout period_
+* **-w MAX_WORKERS, --max-workers MAX_WORKERS** - _Max worker processes (Default: 4)_
+* **--useragent USERAGENT** - _Set specific user agent_
+* **--java-enabled** - _Display Java enviroment_
+* **--verbose** - _Show all checks verbosly_
+* **--proxy PROXY** - _Relay connections through HTTP/socks5 proxy (Example: socks5://127.0.0.1:8080)_
+* **--proxy-auth PROXY_AUTH** - _Set proxy credentials. (Example: username:password)_
 
 Examples:
 ===============
